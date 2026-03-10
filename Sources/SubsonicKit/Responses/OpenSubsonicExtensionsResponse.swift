@@ -1,13 +1,13 @@
 //
-//  InternetRadioStationsResponse.swift
-//  
+//  OpenSubsonicExtensionsResponse.swift
 //
-//  Created by alexis on 2022/6/16.
+//
+//  Created by SubsonicKit.
 //
 
 import Foundation
 
-public struct InternetRadioStationsResponse: Response {
+public struct OpenSubsonicExtensionsResponse: Response {
 
     public var status: String
 
@@ -19,5 +19,5 @@ public struct InternetRadioStationsResponse: Response {
 
     public var error: SubsonicError?
 
-    public let internetRadioStations: InternetRadioStations?
+    public let openSubsonicExtensions: [OpenSubsonicExtension]?
 }

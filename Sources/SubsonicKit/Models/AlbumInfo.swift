@@ -8,5 +8,11 @@
 import Foundation
 
 public struct AlbumInfo: Codable {
-    
+
+    public let notes: String?
+    public let musicBrainzId: String?
+    public let lastFmUrl: String?
+    public let smallImageUrl: String?
+    public let mediumImageUrl: String?
+    public let largeImageUrl: String?
 }

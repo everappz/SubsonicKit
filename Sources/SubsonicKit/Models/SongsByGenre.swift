@@ -8,5 +8,6 @@
 import Foundation
 
 public struct SongsByGenre: Codable {
-    
+
+    public let song: [Song]?
 }

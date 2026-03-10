@@ -11,4 +11,7 @@ public enum AlbumListType: String {
     case random, newest, highest, frequent, recent
     case alphabeticalByName
     case alphabeticalByArtist
+    case starred
+    case byYear
+    case byGenre
 }

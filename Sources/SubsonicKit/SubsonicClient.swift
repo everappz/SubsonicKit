@@ -99,12 +99,17 @@ public class SubsonicClient {
         return try await request(path: "getSong", params: ["id": id])
     }
     
-    public func getVideos() {
-        
+    /// Returns all video files.
+    /// - Returns: Returns a `VideosResponse` element with a nested `videos` element on success.
+    public func getVideos() async throws -> EmptyResponse {
+        return try await request(path: "getVideos")
     }
-    
-    public func getVideoInfo() {
-        
+
+    /// Returns details for a video, including information about available audio tracks, subtitles (captions) and conversions.
+    /// - Parameter id: The video ID.
+    /// - Returns: Returns a `VideoInfoResponse` element with a nested `videoInfo` element on success.
+    public func getVideoInfo(id: String) async throws -> EmptyResponse {
+        return try await request(path: "getVideoInfo", params: ["id": id])
     }
     
     /// Returns artist info with biography, image URLs and similar artists, using data from last.fm.
@@ -638,7 +643,7 @@ public class SubsonicClient {
     
     /// Returns all internet radio stations. Takes no extra parameters.
     /// - Returns: Returns a   `InternetRadioStationsResponse` element with a nested `internetRadioStations` element on success.
-    public func getInternetRadioStations() async throws -> EmptyResponse {
+    public func getInternetRadioStations() async throws -> InternetRadioStationsResponse {
         return try await request(path: "getInternetRadioStations")
     }
     
@@ -869,7 +874,7 @@ public class SubsonicClient {
     public func getPlayQueue() async throws -> PlayQueueResponse {
         return try await request(path: "getPlayQueue")
     }
-    
+
     /// Saves the state of the play queue for this user. This includes the tracks in the play queue, the currently playing track, and the position within this track. Typically used to allow a user to move between different clients/apps while retaining the same play queue (for instance when listening to an audio book).
     /// - Parameters:
     ///   - id: ID of a song in the play queue. Use one id parameter for each song in the play queue.
@@ -887,6 +892,237 @@ public class SubsonicClient {
             params["position"] = position
         }
         return try await request(path: "savePlayQueue", params: params)
+    }
+
+    // MARK: - Sharing
+
+    /// Returns information about shared media this user is allowed to manage. Takes no extra parameters.
+    /// - Returns: Returns a `SharesResponse` element with a nested `shares` element on success.
+    public func getShares() async throws -> SharesResponse {
+        return try await request(path: "getShares")
+    }
+
+    /// Creates a public URL that can be used by anyone to stream music or video from the Subsonic server. The URL is short and suitable for posting on Facebook, Twitter etc. Note: The user must be authorized to share (see Settings > Users > User is allowed to share files with anyone).
+    /// - Parameters:
+    ///   - id: ID of a song, album or video to share. Use one id parameter for each entry to share.
+    ///   - description: A user-defined description that will be displayed to people visiting the shared media.
+    ///   - expires: The time at which the share expires. Given as milliseconds since 1970.
+    /// - Returns: Returns a `SharesResponse` element with a nested `shares` element on success.
+    @discardableResult
+    public func createShare(id: [String], description: String? = nil, expires: Int64? = nil) async throws -> SharesResponse {
+        var params = [String: Any]()
+        params["id"] = id
+        if let description = description {
+            params["description"] = description
+        }
+        if let expires = expires {
+            params["expires"] = expires
+        }
+        return try await request(path: "createShare", params: params)
+    }
+
+    /// Updates the description and/or expiration date for an existing share.
+    /// - Parameters:
+    ///   - id: ID of the share to update.
+    ///   - description: A user-defined description that will be displayed to people visiting the shared media.
+    ///   - expires: The time at which the share expires. Given as milliseconds since 1970, or zero to remove the expiration.
+    /// - Returns: Returns an empty `EmptyResponse` element on success.
+    @discardableResult
+    public func updateShare(id: String, description: String? = nil, expires: Int64? = nil) async throws -> EmptyResponse {
+        var params = [String: Any]()
+        params["id"] = id
+        if let description = description {
+            params["description"] = description
+        }
+        if let expires = expires {
+            params["expires"] = expires
+        }
+        return try await request(path: "updateShare", params: params)
+    }
+
+    /// Deletes an existing share.
+    /// - Parameter id: ID of the share to delete.
+    /// - Returns: Returns an empty `EmptyResponse` element on success.
+    @discardableResult
+    public func deleteShare(id: String) async throws -> EmptyResponse {
+        return try await request(path: "deleteShare", params: ["id": id])
+    }
+
+    // MARK: - Internet Radio
+
+    /// Adds a new internet radio station. Only users with admin privileges are allowed to call this method.
+    /// - Parameters:
+    ///   - streamUrl: The stream URL for the station.
+    ///   - name: The user-defined name for the station.
+    ///   - homepageUrl: The home page URL for the station.
+    /// - Returns: Returns an empty `EmptyResponse` element on success.
+    @discardableResult
+    public func createInternetRadioStation(streamUrl: String, name: String, homepageUrl: String? = nil) async throws -> EmptyResponse {
+        var params = [String: Any]()
+        params["streamUrl"] = streamUrl
+        params["name"] = name
+        if let homepageUrl = homepageUrl {
+            params["homepageUrl"] = homepageUrl
+        }
+        return try await request(path: "createInternetRadioStation", params: params)
+    }
+
+    /// Updates an existing internet radio station. Only users with admin privileges are allowed to call this method.
+    /// - Parameters:
+    ///   - id: The ID for the station.
+    ///   - streamUrl: The stream URL for the station.
+    ///   - name: The user-defined name for the station.
+    ///   - homepageUrl: The home page URL for the station.
+    /// - Returns: Returns an empty `EmptyResponse` element on success.
+    @discardableResult
+    public func updateInternetRadioStation(id: String, streamUrl: String, name: String, homepageUrl: String? = nil) async throws -> EmptyResponse {
+        var params = [String: Any]()
+        params["id"] = id
+        params["streamUrl"] = streamUrl
+        params["name"] = name
+        if let homepageUrl = homepageUrl {
+            params["homepageUrl"] = homepageUrl
+        }
+        return try await request(path: "updateInternetRadioStation", params: params)
+    }
+
+    /// Deletes an existing internet radio station. Only users with admin privileges are allowed to call this method.
+    /// - Parameter id: The ID for the station.
+    /// - Returns: Returns an empty `EmptyResponse` element on success.
+    @discardableResult
+    public func deleteInternetRadioStation(id: String) async throws -> EmptyResponse {
+        return try await request(path: "deleteInternetRadioStation", params: ["id": id])
+    }
+
+    // MARK: - Bookmarks
+
+    /// Creates or updates a bookmark (a position within a media file). Bookmarks are personal and not visible to other users.
+    /// - Parameters:
+    ///   - id: ID of the media file to bookmark. If a bookmark already exists for this file it will be overwritten.
+    ///   - position: The position (in milliseconds) within the media file.
+    ///   - comment: A user-defined comment.
+    /// - Returns: Returns an empty `EmptyResponse` element on success.
+    @discardableResult
+    public func createBookmark(id: String, position: Int64, comment: String? = nil) async throws -> EmptyResponse {
+        var params = [String: Any]()
+        params["id"] = id
+        params["position"] = position
+        if let comment = comment {
+            params["comment"] = comment
+        }
+        return try await request(path: "createBookmark", params: params)
+    }
+
+    /// Deletes the bookmark for a given file.
+    /// - Parameter id: ID of the media file for which to delete the bookmark. Other users' bookmarks are not affected.
+    /// - Returns: Returns an empty `EmptyResponse` element on success.
+    @discardableResult
+    public func deleteBookmark(id: String) async throws -> EmptyResponse {
+        return try await request(path: "deleteBookmark", params: ["id": id])
+    }
+
+    // MARK: - Media Library Scanning
+
+    /// Returns the current status of the media library being scanned. Takes no extra parameters.
+    /// - Returns: Returns a `ScanStatusResponse` element with a nested `scanStatus` element on success.
+    public func getScanStatus() async throws -> ScanStatusResponse {
+        return try await request(path: "getScanStatus")
+    }
+
+    /// Initiates a rescan of the media libraries. Takes no extra parameters.
+    /// - Returns: Returns a `ScanStatusResponse` element with a nested `scanStatus` element on success.
+    @discardableResult
+    public func startScan() async throws -> ScanStatusResponse {
+        return try await request(path: "startScan")
+    }
+
+    // MARK: - Jukebox
+
+    /// Controls the jukebox, i.e., playback directly on the server's audio hardware. Note: The user must be authorized to control the jukebox (see Settings > Users > User is allowed to play files in jukebox mode).
+    /// - Parameters:
+    ///   - action: The operation to perform. Must be one of: get, status, set, start, stop, skip, add, clear, remove, shuffle, setGain.
+    ///   - index: Used by skip and remove. Zero-based index of the song to skip to or remove.
+    ///   - offset: Used by skip. Start playing this many seconds into the track.
+    ///   - id: Used by add and set. ID of song to add to the jukebox playlist. Use multiple id parameters to add many songs in the same request.
+    ///   - gain: Used by setGain to control the playback volume. A float value between 0.0 and 1.0.
+    /// - Returns: Returns a `JukeboxStatusResponse` for most actions, or `JukeboxPlaylistResponse` for action=get.
+    @discardableResult
+    public func jukeboxControl(action: String, index: Int? = nil, offset: Int? = nil, id: [String]? = nil, gain: Float? = nil) async throws -> JukeboxStatusResponse {
+        var params = [String: Any]()
+        params["action"] = action
+        if let index = index {
+            params["index"] = index
+        }
+        if let offset = offset {
+            params["offset"] = offset
+        }
+        if let id = id, !id.isEmpty {
+            params["id"] = id
+        }
+        if let gain = gain {
+            params["gain"] = gain
+        }
+        return try await request(path: "jukeboxControl", params: params)
+    }
+
+    /// Returns the jukebox playlist.
+    /// - Returns: Returns a `JukeboxPlaylistResponse` element with a nested `jukeboxPlaylist` element on success.
+    public func jukeboxGet() async throws -> JukeboxPlaylistResponse {
+        return try await request(path: "jukeboxControl", params: ["action": "get"])
+    }
+
+    // MARK: - Media Retrieval (URL generators)
+
+    /// Creates an HLS (HTTP Live Streaming) playlist used for streaming video or audio. HLS is a streaming protocol.
+    /// - Parameters:
+    ///   - id: A string which uniquely identifies the media file to stream.
+    ///   - bitRate: If specified, the server will attempt to limit the bitrate to this value, in kilobits per second.
+    ///   - audioTrack: The ID of the audio track to use. See getVideoInfo for how to get the list of available audio tracks for a video.
+    /// - Returns: Returns an M3U8 playlist URL on success.
+    public func hls(id: String, bitRate: [String]? = nil, audioTrack: String? = nil) -> URL? {
+        var params = [String: String]()
+        params["id"] = id
+        if let audioTrack = audioTrack {
+            params["audioTrack"] = audioTrack
+        }
+        return resourceURL(path: "hls.m3u8", params: params, salt: id.salt)
+    }
+
+    /// Returns captions (subtitles) for a video. Use getVideoInfo to get a list of available captions.
+    /// - Parameters:
+    ///   - id: The ID of the video.
+    ///   - format: Preferred captions format ("srt" or "vtt").
+    /// - Returns: Returns the raw video captions URL.
+    public func getCaptions(id: String, format: String? = nil) -> URL? {
+        var params = [String: String]()
+        params["id"] = id
+        if let format = format {
+            params["format"] = format
+        }
+        return resourceURL(path: "getCaptions", params: params, salt: id.salt)
+    }
+
+    // MARK: - System
+
+    /// Get details about the software license. Takes no extra parameters. Please note that access to the REST API requires that the server has a valid license (after a 30-day trial period). To get a license key you must upgrade to Subsonic Premium.
+    /// - Returns: Returns a `LicenseResponse` element with a nested `license` element on success.
+    public func getLicense() async throws -> LicenseResponse {
+        return try await request(path: "getLicense")
+    }
+
+    // MARK: - OpenSubsonic Extensions
+
+    /// Returns the list of OpenSubsonic API extensions supported by the server. This is an OpenSubsonic extension.
+    /// - Returns: Returns an `OpenSubsonicExtensionsResponse` element with a nested `openSubsonicExtensions` element on success.
+    public func getOpenSubsonicExtensions() async throws -> OpenSubsonicExtensionsResponse {
+        return try await request(path: "getOpenSubsonicExtensions")
+    }
+
+    /// Returns structured lyrics for a given song. This is an OpenSubsonic extension that requires server support for the "songLyrics" extension.
+    /// - Parameter id: The ID of the song.
+    /// - Returns: Returns a `LyricsBySongIdResponse` element with a nested `lyricsList` element on success.
+    public func getLyricsBySongId(id: String) async throws -> LyricsBySongIdResponse {
+        return try await request(path: "getLyricsBySongId", params: ["id": id])
     }
 }
 

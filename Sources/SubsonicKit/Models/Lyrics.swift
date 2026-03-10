@@ -8,5 +8,8 @@
 import Foundation
 
 public struct Lyrics: Codable, Hashable {
-    
+
+    public let artist: String?
+    public let title: String?
+    public let value: String?
 }
