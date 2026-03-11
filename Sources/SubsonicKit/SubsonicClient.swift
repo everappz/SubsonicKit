@@ -5,25 +5,31 @@ import Foundation
 public class SubsonicClient {
     
     public static var debug = true
-    
+
     public let baseURL: URL
     /// A unique string identifying the client application.
     public var clientName: String = "awesomeappname"
     public var username: String
     public var password: String
     public var version = "1.15.0"
+    public let apiType: SubsonicApiType
     private let salt: String
-    
+
     /// Create an instance of SubsonicClient.
     /// - Parameters:
     ///   - baseURL: The server base url.
     ///   - username: The username.
     ///   - password: The password.
-    public init(baseURL: URL, username: String, password: String) {
+    ///   - apiType: The API type to use for authentication. Defaults to `.subsonic` (token-based).
+    public init(baseURL: URL, username: String, password: String, apiType: SubsonicApiType = .subsonic) {
         self.baseURL = baseURL.appendingPathComponent("rest")
         self.username = username
         self.password = password
+        self.apiType = apiType
         self.salt = String.randomSalt(length: 6)
+        if apiType == .subsonicLegacy {
+            self.version = "1.11.0"
+        }
     }
     
     /// Used to test connectivity with the server. Takes no extra parameters.
@@ -1128,21 +1134,34 @@ public class SubsonicClient {
 
 extension SubsonicClient {
     
+    private func authParameters(salt: String) -> [String: String] {
+        var params = [String: String]()
+        params["u"] = username
+        switch apiType {
+        case .subsonic, .autoDetect:
+            params["t"] = (password + salt).md5
+            params["s"] = salt
+        case .subsonicLegacy:
+            params["p"] = "enc:" + password.hexEncoded
+        }
+        params["c"] = clientName
+        params["v"] = version
+        params["f"] = "json"
+        return params
+    }
+
     func request<Value: Response>(path: String,
                                    method: HTTPMethod = .get,
                                    params: [String: Any] = [:],
                                    headers: HTTPHeaders? = nil) async throws -> Value {
         var parameters = params
-        parameters["u"] = username
-        parameters["t"] = (password + salt).md5
-        parameters["s"] = salt
-        parameters["c"] = clientName
-        parameters["v"] = version
-        parameters["f"] = "json"
-        
+        for (key, value) in authParameters(salt: salt) {
+            parameters[key] = value
+        }
+
         let url = baseURL.appendingPathComponent(path)
         let response = AF.request(url, method: method, parameters: parameters, headers: headers).serializingData()
-        
+
         let result = await response.result
         switch result {
         case .success(let data):
@@ -1158,15 +1177,12 @@ extension SubsonicClient {
             throw error
         }
     }
-    
+
     func resourceURL(path: String, params: [String: String], salt: String) -> URL? {
         var parameters = params
-        parameters["u"] = username
-        parameters["t"] = (password + salt).md5
-        parameters["s"] = salt
-        parameters["c"] = clientName
-        parameters["v"] = version
-        parameters["f"] = "json"
+        for (key, value) in authParameters(salt: salt) {
+            parameters[key] = value
+        }
         let url = baseURL.appendingPathComponent(path)
         do {
             let request = try URLRequest(url: url, method: .get)
@@ -1174,6 +1190,36 @@ extension SubsonicClient {
         } catch {
             return nil
         }
+    }
+
+    /// Auto-detects the API type by trying modern Subsonic auth first, then legacy.
+    /// - Parameters:
+    ///   - baseURL: The server base url.
+    ///   - username: The username.
+    ///   - password: The password.
+    ///   - clientName: The client application name.
+    /// - Returns: `.subsonic` if modern token auth works, `.subsonicLegacy` if only legacy works.
+    /// - Throws: If neither authentication method succeeds.
+    public static func detectApiType(
+        baseURL: URL,
+        username: String,
+        password: String,
+        clientName: String = "SubsonicKit"
+    ) async throws -> SubsonicApiType {
+        // Try modern Subsonic (token-based) first
+        let modernClient = SubsonicClient(baseURL: baseURL, username: username, password: password, apiType: .subsonic)
+        modernClient.clientName = clientName
+        do {
+            try await modernClient.ping()
+            return .subsonic
+        } catch {
+            // Modern auth failed, try legacy
+        }
+
+        let legacyClient = SubsonicClient(baseURL: baseURL, username: username, password: password, apiType: .subsonicLegacy)
+        legacyClient.clientName = clientName
+        try await legacyClient.ping()
+        return .subsonicLegacy
     }
 }
 

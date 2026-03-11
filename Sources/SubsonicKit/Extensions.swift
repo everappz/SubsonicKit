@@ -10,6 +10,10 @@ import CryptoKit
 
 extension String {
     
+    var hexEncoded: String {
+        self.data(using: .utf8)!.map { String(format: "%02x", $0) }.joined()
+    }
+
     var md5: String {
         let data = self.data(using: .utf8) ?? Data()
         return Insecure.MD5.hash(data: data).toHexString()
