@@ -11,7 +11,7 @@ public class SubsonicClient {
     public var clientName: String = "awesomeappname"
     public var username: String
     public var password: String
-    public var version = "1.15.0"
+    public var version = "1.16.1"
     public let apiType: SubsonicApiType
     private let salt: String
 
@@ -456,8 +456,9 @@ public class SubsonicClient {
     ///   - id: A string which uniquely identifies the file to stream.
     ///   - maxBitRate: (Since 1.2.0) If specified, the server will attempt to limit the bitrate to this value, in kilobits per second. If set to zero, no limit is imposed.
     ///   - format: (Since 1.6.0) Specifies the preferred target format (e.g., "mp3" or "flv") in case there are multiple applicable transcodings. Starting with 1.9.0 you can use the special value "raw" to disable transcoding.
+    ///   - converted: (Since 1.15.0) If set to true, the server will return the media in the format it was converted to.
     /// - Returns: Returns binary data on success
-    public func stream(id: String, maxBitRate: Int? = nil, format: String? = nil) -> URL? {
+    public func stream(id: String, maxBitRate: Int? = nil, format: String? = nil, converted: Bool? = nil) -> URL? {
         var params = [String: String]()
         params["id"] = id
         if let maxBitRate = maxBitRate {
@@ -466,7 +467,10 @@ public class SubsonicClient {
         if let format = format {
             params["format"] = format
         }
-        return resourceURL(path: "stream", params: ["id": id], salt: id.salt)
+        if let converted = converted {
+            params["converted"] = String(converted)
+        }
+        return resourceURL(path: "stream", params: params, salt: id.salt)
     }
     
     /// Downloads a given media file. Similar to stream, but this method returns the original media data without transcoding or downsampling.
